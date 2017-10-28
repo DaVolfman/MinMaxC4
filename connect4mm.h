@@ -15,11 +15,7 @@
 using std::vector;
 using std::string;
 
-class connect4state;
-struct connect4stateMoveTuple{
-	connect4state state;
-	int move;
-};
+struct connect4stateMoveTuple;
 
 class connect4state{
 protected:
@@ -31,25 +27,19 @@ protected:
 	static vector<int64_t> stripes;
 	static void init_stripes();
 public:
-	connect4state(){
-		player1 = 0; player2 = 0; occupied = 0;
-		if(stripes.size() == 0)
-			init_stripes();
-	}
+	connect4state();
 
-	connect4state(int64_t play1, int64_t play2){
-		if(stripes.size() == 0)
-			init_stripes();
-		player1=play1;
-		player2=play2;
-		occupied = play1 | play2;
-	}
+	connect4state(int64_t play1, int64_t play2);
 
 	string toString() const;
 	string toLabel() const;
 
 
 	bool isvalid() const;
+
+	bool operator==(const connect4state& other) const{
+		return player1 == other.player1 && player2 == other.player2;
+	}
 
 	//return the gamestate after dropping a piece for player 1 in the given column
 	//returns an intentionally invalid state if parameters out of range
@@ -66,6 +56,11 @@ public:
 
 };
 
+struct connect4stateMoveTuple{
+	connect4state state;
+	int move;
+};
+
 struct moveHeuristicTuple{
 	int move;
 	float heuristic;
@@ -79,12 +74,12 @@ protected:
 	mutable vector<float> generatedReturns;
 
 public:
+	MinmaxNode(){
+	}
+
 	MinmaxNode(connect4state gstate){
 		state = gstate;
 	}
-
-
-
 
 	moveHeuristicTuple maxChoice(unsigned int layers) const{
 		return maxChoiceAB(-1/0, 1/0, layers);
@@ -97,10 +92,11 @@ public:
 
 	void trimExcept(MinmaxNode* subtree);
 	MinmaxNode* findChild(int move) const;
-	MinmaxNode* findChild(connect4state searchstate);
+	MinmaxNode* findChild(connect4state searchstate) const;
 	MinmaxNode* findGrandchild(connect4state searchstate) const;
 
-};
+	string outputTree() const;
 
+};
 
 #endif /* CONNECT4MM_H_ */

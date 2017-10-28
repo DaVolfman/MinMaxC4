@@ -8,9 +8,32 @@
 #include "connect4mm.h"
 #include <vector>
 #include <string>
+#include <queue>
+#include <cstdio>
 
 using std::vector;
 using std::string;
+using std::queue;
+
+vector<int64_t> connect4state::stripes;
+
+inline connect4state::connect4state(int64_t play1, int64_t play2) {
+	if (stripes.size() == 0)
+		init_stripes();
+
+	player1 = play1;
+	player2 = play2;
+	occupied = play1 | play2;
+}
+
+inline connect4state::connect4state() {
+	player1 = 0;
+	player2 = 0;
+	occupied = 0;
+	if (connect4state::stripes.size() == 0)
+		init_stripes();
+}
+
 
 string connect4state::toString() const {
 	string retval = "_______\n";
@@ -64,7 +87,6 @@ string connect4state::toLabel() const {
 
 void connect4state::init_stripes() {
 	int64_t startpoint;
-	int i, j;
 	if (stripes.size() == 0) {
 		stripes = vector<int64_t>();
 		//add horizontal stripes
@@ -114,11 +136,18 @@ inline bool connect4state::isvalid() const {
 float connect4state::heuristic() const {
 	float rval = 0.0;
 	int64_t stripeuse;
-	for (int i = 0; i < stripes.size(); ++i) {
+	int stripecount;
+	for (unsigned int i = 0; i < stripes.size(); ++i) {
 		stripeuse = stripes[i] & player1;
-		rval += 6 / (4 - __builtin_popcount(stripeuse));
+		stripecount = __builtin_popcount(stripeuse);
+		if(stripecount == 4)
+			return 1.0 / 0.0;
+		rval += 6.0 / (4.0 - (float)stripecount);
 		stripeuse = stripes[i] & player2;
-		rval -= 6 / (4 - __builtin_popcount(stripeuse));
+		stripecount = __builtin_popcount(stripeuse);
+		if(stripecount == 4)
+			return -1.0 / 0.0;
+		rval -= 6.0 / (4.0 - (float)stripecount);
 	}
 	return rval;
 }
@@ -126,10 +155,14 @@ float connect4state::heuristic() const {
 vector<connect4stateMoveTuple> connect4state::maxmoves() const {
 	vector<connect4stateMoveTuple> retval;
 	connect4state tempstate;
-	for (int i = 0; i < 7; ++i) {
+	connect4stateMoveTuple insert;
+	for (unsigned int i = 0; i < 7; ++i) {
 		tempstate = player1move(i);
-		if (tempstate.isvalid())
-			retval.push_back( { tempstate, i });
+		if (tempstate.isvalid()){
+			insert.state = tempstate;
+			insert.move = i;
+			retval.push_back(insert);
+		}
 	}
 	return retval;
 }
@@ -137,10 +170,14 @@ vector<connect4stateMoveTuple> connect4state::maxmoves() const {
 vector<connect4stateMoveTuple> connect4state::minmoves() const {
 	vector<connect4stateMoveTuple> retval;
 	connect4state tempstate;
+	connect4stateMoveTuple insert;
 	for (int i = 0; i < 7; ++i) {
 		tempstate = player2move(i);
-		if (tempstate.isvalid())
-			retval.push_back( { tempstate, i });
+		if (tempstate.isvalid()){
+			insert.state = tempstate;
+			insert.move = i;
+			retval.push_back(insert);
+		}
 	}
 	return retval;
 }
@@ -151,7 +188,7 @@ inline connect4state connect4state::player1move(int column) const {
 
 	int64_t move = 0x1 << column;
 	while (move & occupied) {
-		move << 7;
+		move = move << 7;
 	}
 	return connect4state(player1 | move, player2);
 }
@@ -162,7 +199,7 @@ inline connect4state connect4state::player2move(int column) const {
 
 	int64_t move = 0x1 << column;
 	while (move & occupied) {
-		move << 7;
+		move = move << 7;
 	}
 	return connect4state(player1, player2 | move);
 }
@@ -172,10 +209,13 @@ moveHeuristicTuple MinmaxNode::maxChoiceAB(float lowerbound, float upperbound, u
 	moveHeuristicTuple retval;
 	vector<connect4stateMoveTuple> movelist = state.maxmoves();
 
-	if(layers == 0)
-		return {state.heuristic(),0};
+	if(layers == 0){
+		retval.heuristic = state.heuristic();
+		retval.move = 0;
+		return retval;
+	}
 
-	for(int i = 0; i < movelist.size() and upperbound > lowerbound; ++i){
+	for(unsigned int i = 0; i < movelist.size() and upperbound > lowerbound; ++i){
 		generatedMoves[i]= movelist[i].move;
 		if(generatedChildren.size() < i){
 			generatedChildren.push_back(new MinmaxNode(movelist[i].state));
@@ -196,10 +236,13 @@ moveHeuristicTuple MinmaxNode::minChoiceAB(float lowerbound, float upperbound, u
 	moveHeuristicTuple retval;
 	vector<connect4stateMoveTuple> movelist = state.minmoves();
 
-	if(layers == 0)
-		return {state.heuristic(),0};
+	if(layers == 0){
+		retval.heuristic = state.heuristic();
+		retval.move = 0;
+		return retval;
+	}
 
-	for(int i = 0; i < movelist.size() and upperbound > lowerbound; ++i){
+	for(unsigned int i = 0; i < movelist.size() and upperbound > lowerbound; ++i){
 		generatedMoves[i]= movelist[i].move;
 		if(generatedChildren.size() < i){
 			generatedChildren.push_back(new MinmaxNode(movelist[i].state));
@@ -215,27 +258,27 @@ moveHeuristicTuple MinmaxNode::minChoiceAB(float lowerbound, float upperbound, u
 	return retval;
 }
 
-inline void MinmaxNode::trimExcept(MinmaxNode* subtree) {
+void MinmaxNode::trimExcept(MinmaxNode* subtree) {
 	if (subtree == this)
 		return;
 
-	for (int i = 0; i < generatedChildren.size(); ++i) {
-		trimExcept (subTree);
+	for (unsigned int i = 0; i < generatedChildren.size(); ++i) {
+		generatedChildren[i]->trimExcept(subtree);
 	}
 	if (subtree != this)
 		delete this;
 }
 
 inline MinmaxNode* MinmaxNode::findChild(int move) const {
-	for (int i = 0; i < generatedChildren.size(); ++i) {
+	for (unsigned int i = 0; i < generatedChildren.size(); ++i) {
 		if (generatedMoves[i] == move)
 			return generatedChildren[i];
 	}
 	return NULL;
 }
 
-inline MinmaxNode* MinmaxNode::findChild(connect4state searchstate) {
-	for (int i = 0; i < generatedChildren.size(); ++i) {
+inline MinmaxNode* MinmaxNode::findChild(connect4state searchstate) const{
+	for (unsigned int i = 0; i < generatedChildren.size(); ++i) {
 		if (generatedChildren[i]->state == searchstate)
 			return generatedChildren[i];
 	}
@@ -245,7 +288,7 @@ inline MinmaxNode* MinmaxNode::findChild(connect4state searchstate) {
 MinmaxNode* MinmaxNode::findGrandchild(connect4state searchstate) const{
 	MinmaxNode* potential = NULL;
 
-	for(int i=0; i<generatedChildren.size(); ++i){
+	for(unsigned int i=0; i<generatedChildren.size(); ++i){
 		potential = generatedChildren[i]->findChild(searchstate);
 		if(potential != NULL)
 			return potential;
@@ -253,3 +296,47 @@ MinmaxNode* MinmaxNode::findGrandchild(connect4state searchstate) const{
 
 	return NULL;
 }
+
+string MinmaxNode::outputTree() const {
+	string retval;
+	const MinmaxNode* scan = this;
+	MinmaxNode* subscan;
+	queue<const MinmaxNode*> procqueue, nextqueue;
+	int layer = 0;
+	char levelLabel[12];
+	char movestring[64];
+	procqueue.push(scan);
+
+	while(!procqueue.empty()){
+		if(nextqueue.empty()){
+			sprintf(levelLabel, "Layer %d\n", layer);
+			retval += levelLabel;
+		}
+		scan = procqueue.front();
+		procqueue.pop();
+		retval += "Node ID " + scan->state.toLabel() + '\n';
+		retval += "Game State:\n" + scan->state.toString() + '\n';
+		if(not scan->generatedChildren.empty()){
+			retval += "Moves:\n";
+			for(int i = 0; i< scan->generatedChildren.size(); ++i){
+				subscan = scan->generatedChildren[i];
+				nextqueue.push(subscan);
+				sprintf(movestring,"Move %d, Value %f, Node ID ", scan->generatedMoves[i], scan->generatedReturns[i]);
+				retval += movestring + subscan->state.toLabel() + '\n';
+			}
+			retval += '\n';
+		}else{
+			sprintf(movestring,"Leaf state, actual value is %f\n",scan->state.heuristic());
+			retval += movestring;
+		}
+
+		if(procqueue.empty() and not nextqueue.empty()){
+			procqueue = nextqueue;
+			while(not nextqueue.empty()) nextqueue.pop();
+		}
+	}
+
+	return retval;
+}
+
+

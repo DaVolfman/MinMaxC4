@@ -11,7 +11,8 @@ int main(){
 	MinmaxNode* nextstate = NULL;
 	moveHeuristicTuple choice = gametree->maxChoice(5);
 
-	cout << "I'm going first and choosing " << choice.move
+
+	cerr << "I'm going first and choosing " << choice.move
 		  << " because it looks like I can get " << choice.heuristic << endl;
 	nextstate = gametree->findChild(choice.move);
 	if(nextstate == NULL){
@@ -21,7 +22,7 @@ int main(){
 	gametree->trimExcept(nextstate);
 	gametree=nextstate;
 	while(not gametree->state.player1wins() and not gametree->state.player2wins()){
-		cout << gametree->state.toString();
+		cerr << gametree->state.toString();
 		nextstate = NULL;
 
 		playerchoice = -1;
@@ -32,32 +33,36 @@ int main(){
 
 		nextstate = gametree->findChild(playerchoice);
 		if(nextstate == NULL){
-			cout << "That was unexpected.\n";
+			cerr << "That was unexpected.\n";
 			nextstate = new MinmaxNode(gametree->state.player2move(playerchoice));
 			gametree->trimExcept(NULL);
 		}else{
 			gametree->trimExcept(nextstate);
 		}
 		gametree = nextstate;
-		cout << gametree->state.toString();
+		cerr << gametree->state.toString();
 		choice = gametree->maxChoice(5);
-		cout << "I'm choosing " << choice.move
-			  << " because it looks like I can get " << choice.heuristic << endl;
-		nextstate = gametree->findChild(choice.move);
-		if(nextstate == NULL){
-			cerr << "ERROR: AI took unexpected path.\n";
-			return 1;
+		if(not gametree->state.player2wins()){
+			cerr << "I'm choosing " << choice.move
+				  << " because it looks like I can get " << choice.heuristic << endl;
+			nextstate = gametree->findChild(choice.move);
+			if(nextstate == NULL){
+				cerr << "ERROR: AI took unexpected path.\n";
+				return 1;
+			}
+			gametree->trimExcept(nextstate);
+			gametree=nextstate;
 		}
-		gametree->trimExcept(nextstate);
-		gametree=nextstate;
 	}
+	cerr << gametree->state.toString();
 	if(gametree->state.player2wins()){
-		cout << "You win!  How did you do that?" << endl;
+		cerr << "You win!  How did you do that?" << endl;
 	}else if(gametree->state.player1wins()){
-		cout << "I win!  As expected." << endl;
+		cerr << "I win!  As expected." << endl;
 	}else{
 		cerr << "Unexpected state reached.\n";
 	}
+
 
 	gametree->trimExcept((MinmaxNode*)NULL);
 

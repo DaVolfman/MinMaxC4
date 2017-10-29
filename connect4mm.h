@@ -33,6 +33,7 @@ public:
 
 	string toString() const;
 	string toLabel() const;
+	static string check_stripes();
 
 
 	bool isvalid() const;
@@ -101,5 +102,6 @@ public:
 	string outputTree() const;
 
 };
+
 
 #endif /* CONNECT4MM_H_ */

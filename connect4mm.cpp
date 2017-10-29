@@ -17,6 +17,9 @@ using std::string;
 using std::queue;
 using std::isinf;
 
+#include <iostream>
+using std::cout;
+
 vector<int64_t> connect4state::stripes;
 
 inline connect4state::connect4state(int64_t play1, int64_t play2) {
@@ -94,7 +97,7 @@ void connect4state::init_stripes() {
 		//add horizontal stripes
 		for (int j = 0; j <= 5; ++j) {
 			for (int i = 0; i <= 3; ++i) {
-				startpoint = 1 << (i + j * 7);
+				startpoint = 1ll << (i + j * 7);
 				stripes.push_back(
 						startpoint | (startpoint << 1) | (startpoint << 2)
 								| (startpoint << 3));
@@ -103,7 +106,7 @@ void connect4state::init_stripes() {
 		//add vertical stripes
 		for (int j = 0; j <= 2; ++j) {
 			for (int i = 0; i <= 6; ++i) {
-				startpoint = 1 << (i + j * 7);
+				startpoint = 1ll << (i + j * 7);
 				stripes.push_back(
 						startpoint | (startpoint << 7) | (startpoint << 14)
 								| (startpoint << 21));
@@ -112,7 +115,7 @@ void connect4state::init_stripes() {
 		//add right ascending stripes
 		for (int j = 0; j <= 2; ++j) {
 			for (int i = 0; i <= 3; ++i) {
-				startpoint = 1 << (i + j * 7);
+				startpoint = 1ll << (i + j * 7);
 				stripes.push_back(
 						startpoint | (startpoint << 8) | (startpoint << 16)
 								| (startpoint << 24));
@@ -121,7 +124,7 @@ void connect4state::init_stripes() {
 		//add left ascending stripes
 		for (int j = 0; j <= 2; ++j) {
 			for (int i = 3; i <= 6; ++i) {
-				startpoint = 1 << (i + j * 7);
+				startpoint = 1ll << (i + j * 7);
 				stripes.push_back(
 						startpoint | (startpoint << 6) | (startpoint << 12)
 								| (startpoint << 18));
@@ -129,6 +132,18 @@ void connect4state::init_stripes() {
 		}
 	}
 }
+
+string connect4state::check_stripes() {
+	string retval;
+	connect4state check;
+	for(unsigned int i = 0; i < stripes.size(); ++i){
+		check = connect4state(stripes[i], 0ll);
+		retval += check.toString();
+	}
+
+	return retval;
+}
+
 
 inline bool connect4state::isvalid() const {
 	return player1 >= 0 && player2 >= 0 && player1 < 0x40000000000
@@ -211,7 +226,7 @@ inline connect4state connect4state::player2move(int column) const {
 }
 
 
-moveHeuristicTuple MinmaxNode::maxChoiceAB(float lowerbound, float upperbound, unsigned int layers) const{
+moveHeuristicTuple MinmaxNode::maxChoiceAB(float atLeast, float atMost, unsigned int layers) const{
 	moveHeuristicTuple retval;
 	vector<connect4stateMoveTuple> movelist = state.maxmoves();
 
@@ -221,14 +236,19 @@ moveHeuristicTuple MinmaxNode::maxChoiceAB(float lowerbound, float upperbound, u
 		return retval;
 	}
 
-	for(unsigned int i = 0; i < movelist.size() and upperbound > lowerbound; ++i){
+	retval.heuristic = -1.0;
+	retval.move = -1;
+
+	for(unsigned int i = 0; i < movelist.size() /*and atMost > atLeast*/; ++i){
 		if(generatedChildren.size() <= i){
 			generatedMoves.push_back(movelist[i].move);
 			generatedChildren.push_back(new MinmaxNode(movelist[i].state));
-			generatedReturns.push_back(generatedChildren[i]->minChoiceAB(lowerbound,upperbound,layers-1).heuristic);
+			//generatedReturns.push_back(generatedChildren[i]->minChoiceAB(atLeast,atMost,layers-1).heuristic);
+			generatedReturns.push_back(generatedChildren[i]->minChoiceAB(-1.0/0.0,1.0/0.0,layers-1).heuristic);
 		}
-		if(generatedReturns[i] > lowerbound){
-			lowerbound = generatedReturns[i];
+		if(generatedReturns[i] > atLeast){
+			cout << "Max " << generatedReturns[i] << " > " << atLeast << '\n';
+			atLeast = generatedReturns[i];
 			retval.heuristic = generatedReturns[i];
 			retval.move=generatedMoves[i];
 		}
@@ -238,24 +258,29 @@ moveHeuristicTuple MinmaxNode::maxChoiceAB(float lowerbound, float upperbound, u
 }
 
 
-moveHeuristicTuple MinmaxNode::minChoiceAB(float lowerbound, float upperbound, unsigned int layers) const{
+moveHeuristicTuple MinmaxNode::minChoiceAB(float atLeast, float atMost, unsigned int decisions) const{
 	moveHeuristicTuple retval;
 	vector<connect4stateMoveTuple> movelist = state.minmoves();
 
-	if(layers < 1){
+	if(decisions < 1){
 		retval.heuristic = state.heuristic();
 		retval.move = 0;
 		return retval;
 	}
 
-	for(unsigned int i = 0; i < movelist.size() and upperbound > lowerbound; ++i){
+	retval.heuristic = -1.0;
+	retval.move = -1;
+
+	for(unsigned int i = 0; i < movelist.size()/* and atMost > atLeast*/; ++i){
 		if(generatedChildren.size() <= i){
 			generatedMoves.push_back(movelist[i].move);
 			generatedChildren.push_back(new MinmaxNode(movelist[i].state));
-			generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(lowerbound,upperbound,layers-1).heuristic);
+			//generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(atLeast,atMost,decisions-1).heuristic);
+			generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(-1.0/0.0,1.0/0.0,decisions-1).heuristic);
 		}
-		if(generatedReturns[i] < upperbound){
-			upperbound = generatedReturns[i];
+		if(generatedReturns[i] < atMost){
+			cout << "Min " << generatedReturns[i] << " < " << atMost << '\n';
+			atMost = generatedReturns[i];
 			retval.heuristic = generatedReturns[i];
 			retval.move=generatedMoves[i];
 		}

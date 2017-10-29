@@ -17,8 +17,8 @@ using std::string;
 using std::queue;
 using std::isinf;
 
-#include <iostream>
-using std::cout;
+//#include <iostream>
+//using std::cout;
 
 vector<int64_t> connect4state::stripes;
 
@@ -56,7 +56,7 @@ string connect4state::toString() const {
 		}
 		retval += "|\n";
 	}
-	retval += "---------\n";
+	retval += "-6543210-\n";
 	return retval;
 }
 
@@ -151,6 +151,8 @@ inline bool connect4state::isvalid() const {
 }
 
 float connect4state::heuristic() const {
+	connect4state debugout;
+
 	float rval = 0.0;
 	int64_t stripe1, stripe2;
 	for (unsigned int i = 0; i < stripes.size(); ++i) {
@@ -161,6 +163,10 @@ float connect4state::heuristic() const {
 		}else if(stripe2 and not stripe1){
 			rval -= 6.0 / (4.0 - (float)__builtin_popcount(stripe2));
 		}
+//		if(fmod(rval,0.0) > 0.1){
+//			debugout = connect4state(stripe1,stripe2);
+//			cout << "Unusual heuristic, last match was\n" << debugout.toLabel();
+//		}
 	}
 	return rval;
 }
@@ -184,7 +190,11 @@ vector<connect4stateMoveTuple> connect4state::maxmoves() const {
 			insert.move = i;
 			retval.push_back(insert);
 		}
+//		else
+//			cout << "Invalid state max: " << tempstate.occupied << '\n';
 	}
+//	if(retval.empty())
+//		cout << "No max moves generated for state: "<< toLabel();
 	return retval;
 }
 
@@ -207,7 +217,7 @@ inline connect4state connect4state::player1move(int column) const {
 	if (column >= 7 || column < 0)
 		return connect4state(-1, -1);
 
-	int64_t move = 0x1 << column;
+	int64_t move = 0x1ll << column;
 	while (move & occupied) {
 		move = move << 7;
 	}
@@ -218,7 +228,7 @@ inline connect4state connect4state::player2move(int column) const {
 	if (column >= 7 || column < 0)
 		return connect4state(-1, -1);
 
-	int64_t move = 0x1 << column;
+	int64_t move = 0x1ll << column;
 	while (move & occupied) {
 		move = move << 7;
 	}
@@ -236,18 +246,26 @@ moveHeuristicTuple MinmaxNode::maxChoiceAB(float atLeast, float atMost, unsigned
 		return retval;
 	}
 
+	if(movelist.empty()){
+		retval.heuristic = 0.0;
+		retval.move = -1;
+		return retval;
+	}
+
 	retval.heuristic = -1.0;
 	retval.move = -1;
 
-	for(unsigned int i = 0; i < movelist.size() /*and atMost > atLeast*/; ++i){
+	for(unsigned int i = 0; i < movelist.size() and atMost > atLeast; ++i){
 		if(generatedChildren.size() <= i){
 			generatedMoves.push_back(movelist[i].move);
 			generatedChildren.push_back(new MinmaxNode(movelist[i].state));
-			//generatedReturns.push_back(generatedChildren[i]->minChoiceAB(atLeast,atMost,layers-1).heuristic);
-			generatedReturns.push_back(generatedChildren[i]->minChoiceAB(-1.0/0.0,1.0/0.0,layers-1).heuristic);
+			generatedReturns.push_back(generatedChildren[i]->minChoiceAB(atLeast,atMost,layers-1).heuristic);
+			//generatedReturns.push_back(generatedChildren[i]->minChoiceAB(-1.0/0.0,1.0/0.0,layers-1).heuristic);
+		}
+		else{
+			generatedReturns[i]=generatedChildren[i]->minChoiceAB(atLeast,atMost,layers-1).heuristic;
 		}
 		if(generatedReturns[i] > atLeast){
-			cout << "Max " << generatedReturns[i] << " > " << atLeast << '\n';
 			atLeast = generatedReturns[i];
 			retval.heuristic = generatedReturns[i];
 			retval.move=generatedMoves[i];
@@ -268,18 +286,26 @@ moveHeuristicTuple MinmaxNode::minChoiceAB(float atLeast, float atMost, unsigned
 		return retval;
 	}
 
+	if(movelist.empty()){
+		retval.heuristic = 0.0;
+		retval.move = -1;
+		return retval;
+	}
+
 	retval.heuristic = -1.0;
 	retval.move = -1;
 
-	for(unsigned int i = 0; i < movelist.size()/* and atMost > atLeast*/; ++i){
+	for(unsigned int i = 0; i < movelist.size() and atMost > atLeast; ++i){
 		if(generatedChildren.size() <= i){
 			generatedMoves.push_back(movelist[i].move);
 			generatedChildren.push_back(new MinmaxNode(movelist[i].state));
-			//generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(atLeast,atMost,decisions-1).heuristic);
-			generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(-1.0/0.0,1.0/0.0,decisions-1).heuristic);
+			generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(atLeast,atMost,decisions-1).heuristic);
+			//generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(-1.0/0.0,1.0/0.0,decisions-1).heuristic);
+		}
+		else{
+			generatedReturns[i]=generatedChildren[i]->maxChoiceAB(atLeast,atMost,decisions-1).heuristic;
 		}
 		if(generatedReturns[i] < atMost){
-			cout << "Min " << generatedReturns[i] << " < " << atMost << '\n';
 			atMost = generatedReturns[i];
 			retval.heuristic = generatedReturns[i];
 			retval.move=generatedMoves[i];

@@ -77,6 +77,7 @@ protected:
 	mutable vector<float> generatedReturns;
 
 public:
+
 	connect4state state;
 	MinmaxNode(){
 	}

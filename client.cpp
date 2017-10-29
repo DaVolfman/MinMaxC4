@@ -26,14 +26,16 @@ int main(){
 		nextstate = NULL;
 
 		playerchoice = -1;
+		//choice = gametree->minChoice(5);
 		while(playerchoice < 0 or playerchoice >= 7){
 			cerr << "Choose a move(0-6):";
 			cin >> playerchoice;
 		}
 
+
 		nextstate = gametree->findChild(playerchoice);
 		if(nextstate == NULL){
-			cerr << "That was unexpected.\n";
+			cerr << "I planned, but not for " << playerchoice << endl;
 			nextstate = new MinmaxNode(gametree->state.player2move(playerchoice));
 			gametree->trimExcept(NULL);
 		}else{
@@ -42,22 +44,24 @@ int main(){
 		gametree = nextstate;
 		cerr << gametree->state.toString();
 		choice = gametree->maxChoice(5);
-		if(not gametree->state.player2wins()){
-			cerr << "I'm choosing " << choice.move
-				  << " because it looks like I can get " << choice.heuristic << endl;
-			nextstate = gametree->findChild(choice.move);
-			if(nextstate == NULL){
-				cerr << "ERROR: AI took unexpected path.\n";
-				return 1;
-			}
-			gametree->trimExcept(nextstate);
-			gametree=nextstate;
+		if(gametree->state.player2wins())
+			break;
+		cerr << "I'm choosing " << choice.move
+			  << " because it looks like I can get " << choice.heuristic << endl;
+		nextstate = gametree->findChild(choice.move);
+		if(nextstate == NULL){
+			cerr << "ERROR: AI took unexpected path.\n";
+			return 1;
 		}
+		gametree->trimExcept(nextstate);
+		gametree=nextstate;
+		if(gametree->state.player1wins())
+			break;
 	}
-	cerr << gametree->state.toString();
 	if(gametree->state.player2wins()){
 		cerr << "You win!  How did you do that?" << endl;
 	}else if(gametree->state.player1wins()){
+		cerr << gametree->state.toString();
 		cerr << "I win!  As expected." << endl;
 	}else{
 		cerr << "Unexpected state reached.\n";

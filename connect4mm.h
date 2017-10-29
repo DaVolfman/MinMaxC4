@@ -50,6 +50,9 @@ public:
 
 	float heuristic() const;
 
+	bool player1wins() const;
+	bool player2wins() const;
+
 	vector<connect4stateMoveTuple> maxmoves() const;
 
 	vector<connect4stateMoveTuple> minmoves() const;
@@ -68,12 +71,12 @@ struct moveHeuristicTuple{
 
 class MinmaxNode{
 protected:
-	connect4state state;
 	mutable vector<int> generatedMoves;
 	mutable vector<MinmaxNode *> generatedChildren;
 	mutable vector<float> generatedReturns;
 
 public:
+	connect4state state;
 	MinmaxNode(){
 	}
 
@@ -82,10 +85,10 @@ public:
 	}
 
 	moveHeuristicTuple maxChoice(unsigned int layers) const{
-		return maxChoiceAB(-1/0, 1/0, layers);
+		return maxChoiceAB(-1.0/0.0, 1.0/0.0, layers);
 	}
 	moveHeuristicTuple minChoice(unsigned int layers) const{
-		return minChoiceAB(-1/0, 1/0, layers);
+		return minChoiceAB(-1.0/0.0, 1.0/0.0, layers);
 	}
 	moveHeuristicTuple maxChoiceAB(float lowerbound, float upperbound, unsigned int layers) const;
 	moveHeuristicTuple minChoiceAB(float lowerbound, float upperbound, unsigned int layers) const;

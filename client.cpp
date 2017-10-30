@@ -5,6 +5,24 @@ using std::cerr;
 using std::cin;
 using std::endl;
 
+
+void testWins(){
+	connect4state htester;
+
+	cerr << "Checking heuristic for player 1 wins:\n";
+	for(unsigned int i = 0; i < connect4state::stripes.size(); ++i){
+		htester = connect4state(connect4state::stripes[i],0ll);
+		cerr << htester.heuristic() << endl;
+	}
+
+	cerr << "Checking heuristic for player 1 wins:\n";
+	for(unsigned int i = 0; i < connect4state::stripes.size(); ++i){
+		htester = connect4state(0ll, connect4state::stripes[i]);
+		cerr << htester.heuristic() << endl;
+	}
+}
+
+
 int main(){
 	int playerchoice=-1;
 	MinmaxNode* gametree = new MinmaxNode;
@@ -70,5 +88,7 @@ int main(){
 
 	gametree->trimExcept((MinmaxNode*)NULL);
 
+
+
 	return 0;
-}  
+}

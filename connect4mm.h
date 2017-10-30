@@ -24,9 +24,9 @@ protected:
 	mutable int64_t occupied;
 
 	//stripes is the set of all connect 4s
+public:
 	static vector<int64_t> stripes;
 	static void init_stripes();
-public:
 	connect4state();
 
 	connect4state(int64_t play1, int64_t play2);

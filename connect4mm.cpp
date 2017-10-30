@@ -18,7 +18,7 @@ using std::queue;
 using std::isinf;
 
 //#include <iostream>
-//using std::cout;
+//using std::cout;//debug messages to cout and user IO to cerr makes routing debug to a file easy
 
 vector<int64_t> connect4state::stripes;
 
@@ -146,26 +146,29 @@ string connect4state::check_stripes() {
 
 
 inline bool connect4state::isvalid() const {
-	return player1 >= 0 && player2 >= 0 && player1 < 0x40000000000
-			&& player2 < 0x40000000000 && !(player1 & player2);
+	return player1 >= 0 && player2 >= 0 && player1 < 0x40000000000ll
+			&& player2 < 0x40000000000ll && !(player1 & player2);
 }
 
 float connect4state::heuristic() const {
-	connect4state debugout;
-
 	float rval = 0.0;
 	int64_t stripe1, stripe2;
 	for (unsigned int i = 0; i < stripes.size(); ++i) {
 		stripe1 = stripes[i] & player1;
 		stripe2 = stripes[i] & player2;
 		if(stripe1 and not stripe2){
-			rval += 6.0 / (4.0 - (float)__builtin_popcount(stripe1));
+			rval += 6.0 / (4.0 - (float)__builtin_popcountll(stripe1));
+			if(isinf(rval))
+				return rval;
 		}else if(stripe2 and not stripe1){
-			rval -= 6.0 / (4.0 - (float)__builtin_popcount(stripe2));
+			rval -= 6.0 / (4.0 - (float)__builtin_popcountll(stripe2));
+			if(isinf(rval))
+				return rval;
 		}
-//		if(fmod(rval,0.0) > 0.1){
+//		connect4state debugout;
+//		if(fmod(rval, 1.0) > 0.01){
 //			debugout = connect4state(stripe1,stripe2);
-//			cout << "Unusual heuristic, last match was\n" << debugout.toLabel();
+//			cout << "Unusual heuristic, last match was\n" << debugout.toString();
 //		}
 	}
 	return rval;
@@ -255,12 +258,14 @@ moveHeuristicTuple MinmaxNode::maxChoiceAB(float atLeast, float atMost, unsigned
 	retval.heuristic = -1.0;
 	retval.move = -1;
 
-	for(unsigned int i = 0; i < movelist.size() and atMost > atLeast; ++i){
+	for(unsigned int i = 0; i < movelist.size()/* and atMost > atLeast*/; ++i){
+		//pruning given alpha beta disabled.
 		if(generatedChildren.size() <= i){
 			generatedMoves.push_back(movelist[i].move);
 			generatedChildren.push_back(new MinmaxNode(movelist[i].state));
-			generatedReturns.push_back(generatedChildren[i]->minChoiceAB(atLeast,atMost,layers-1).heuristic);
-			//generatedReturns.push_back(generatedChildren[i]->minChoiceAB(-1.0/0.0,1.0/0.0,layers-1).heuristic);
+			//generatedReturns.push_back(generatedChildren[i]->minChoiceAB(atLeast,atMost,layers-1).heuristic);
+			//propagation of alpha and beta to lower layers disabled.
+			generatedReturns.push_back(generatedChildren[i]->minChoiceAB(-1.0/0.0,1.0/0.0,layers-1).heuristic);
 		}
 		else{
 			generatedReturns[i]=generatedChildren[i]->minChoiceAB(atLeast,atMost,layers-1).heuristic;
@@ -295,12 +300,14 @@ moveHeuristicTuple MinmaxNode::minChoiceAB(float atLeast, float atMost, unsigned
 	retval.heuristic = -1.0;
 	retval.move = -1;
 
-	for(unsigned int i = 0; i < movelist.size() and atMost > atLeast; ++i){
+	for(unsigned int i = 0; i < movelist.size()/* and atMost > atLeast*/; ++i){
+		//pruning given alpha beta disabled.
 		if(generatedChildren.size() <= i){
 			generatedMoves.push_back(movelist[i].move);
 			generatedChildren.push_back(new MinmaxNode(movelist[i].state));
-			generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(atLeast,atMost,decisions-1).heuristic);
-			//generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(-1.0/0.0,1.0/0.0,decisions-1).heuristic);
+			//generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(atLeast,atMost,decisions-1).heuristic);
+			//propagation of alpha and beta to lower layers disabled.
+			generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(-1.0/0.0,1.0/0.0,decisions-1).heuristic);
 		}
 		else{
 			generatedReturns[i]=generatedChildren[i]->maxChoiceAB(atLeast,atMost,decisions-1).heuristic;

@@ -27,7 +27,7 @@ int main(){
 	int playerchoice=-1;
 	MinmaxNode* gametree = new MinmaxNode;
 	MinmaxNode* nextstate = NULL;
-	moveHeuristicTuple choice = gametree->maxChoice(5);
+	moveHeuristicTuple choice = gametree->maxChoice(6);
 
 
 	cerr << "I'm going first and choosing " << choice.move
@@ -61,7 +61,7 @@ int main(){
 		}
 		gametree = nextstate;
 		cerr << gametree->state.toString();
-		choice = gametree->maxChoice(5);
+		choice = gametree->maxChoice(6);
 		if(gametree->state.player2wins())
 			break;
 		cerr << "I'm choosing " << choice.move

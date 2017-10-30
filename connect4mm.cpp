@@ -41,22 +41,22 @@ inline connect4state::connect4state() {
 
 
 string connect4state::toString() const {
-	string retval = "_6543210_\n";
+	string retval = "\033[33m_6543210_\n";
 	for (int j = 5; j >= 0; j--) {
-		retval += "|";
+		retval += "|\033[0m";
 		for (int i = 6; i >= 0; i--) {
 			int64_t k = 0x1ll << ((j * 7) + i);
 			if (player1 & k) {
-				retval += "X";
+				retval += "\033[31mX\033[0m";
 			} else if (player2 & k) {
-				retval += "O";
+				retval += "\033[34mO\033[0m";
 			} else {
 				retval += " ";
 			}
 		}
-		retval += "|\n";
+		retval += "\033[33m|\n";
 	}
-	retval += "-6543210-\n";
+	retval += "-6543210-\033[0m\n";
 	return retval;
 }
 
@@ -243,7 +243,7 @@ moveHeuristicTuple MinmaxNode::maxChoiceAB(float atLeast, float atMost, unsigned
 	moveHeuristicTuple retval;
 	vector<connect4stateMoveTuple> movelist = state.maxmoves();
 
-	if(layers < 1){
+	if(layers < 1 or state.player1wins() or state.player2wins()){
 		retval.heuristic = state.heuristic();
 		retval.move = 0;
 		return retval;
@@ -258,14 +258,14 @@ moveHeuristicTuple MinmaxNode::maxChoiceAB(float atLeast, float atMost, unsigned
 	retval.heuristic = -1.0;
 	retval.move = -1;
 
-	for(unsigned int i = 0; i < movelist.size()/* and atMost > atLeast*/; ++i){
+	for(unsigned int i = 0; i < movelist.size() and atMost > atLeast; ++i){
 		//pruning given alpha beta disabled.
 		if(generatedChildren.size() <= i){
 			generatedMoves.push_back(movelist[i].move);
 			generatedChildren.push_back(new MinmaxNode(movelist[i].state));
-			//generatedReturns.push_back(generatedChildren[i]->minChoiceAB(atLeast,atMost,layers-1).heuristic);
+			generatedReturns.push_back(generatedChildren[i]->minChoiceAB(atLeast,atMost,layers-1).heuristic);
 			//propagation of alpha and beta to lower layers disabled.
-			generatedReturns.push_back(generatedChildren[i]->minChoiceAB(-1.0/0.0,1.0/0.0,layers-1).heuristic);
+			//generatedReturns.push_back(generatedChildren[i]->minChoiceAB(-1.0/0.0,1.0/0.0,layers-1).heuristic);
 		}
 		else{
 			generatedReturns[i]=generatedChildren[i]->minChoiceAB(atLeast,atMost,layers-1).heuristic;
@@ -285,7 +285,7 @@ moveHeuristicTuple MinmaxNode::minChoiceAB(float atLeast, float atMost, unsigned
 	moveHeuristicTuple retval;
 	vector<connect4stateMoveTuple> movelist = state.minmoves();
 
-	if(decisions < 1){
+	if(decisions < 1 or state.player2wins() or state.player1wins()){
 		retval.heuristic = state.heuristic();
 		retval.move = 0;
 		return retval;
@@ -300,14 +300,14 @@ moveHeuristicTuple MinmaxNode::minChoiceAB(float atLeast, float atMost, unsigned
 	retval.heuristic = -1.0;
 	retval.move = -1;
 
-	for(unsigned int i = 0; i < movelist.size()/* and atMost > atLeast*/; ++i){
+	for(unsigned int i = 0; i < movelist.size() and atMost > atLeast; ++i){
 		//pruning given alpha beta disabled.
 		if(generatedChildren.size() <= i){
 			generatedMoves.push_back(movelist[i].move);
 			generatedChildren.push_back(new MinmaxNode(movelist[i].state));
-			//generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(atLeast,atMost,decisions-1).heuristic);
+			generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(atLeast,atMost,decisions-1).heuristic);
 			//propagation of alpha and beta to lower layers disabled.
-			generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(-1.0/0.0,1.0/0.0,decisions-1).heuristic);
+			//generatedReturns.push_back(generatedChildren[i]->maxChoiceAB(-1.0/0.0,1.0/0.0,decisions-1).heuristic);
 		}
 		else{
 			generatedReturns[i]=generatedChildren[i]->maxChoiceAB(atLeast,atMost,decisions-1).heuristic;
